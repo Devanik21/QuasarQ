@@ -87,7 +87,7 @@ with tab1:
         alpha = np.sqrt(m * omega / hbar)
         
         # Normalization constant
-        N = (alpha / np.sqrt(np.pi * 2**n * np.math.factorial(n)))**0.5
+        N = (alpha / np.sqrt(np.pi * 2**n * math.factorial(n)))**0.5
         
         # Wavefunction
         psi = N * hermite(alpha * x, n) * np.exp(-(alpha * x)**2 / 2)
