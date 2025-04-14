@@ -1,140 +1,107 @@
 import streamlit as st
 import google.generativeai as genai
+import random
 
 # Page configuration
 st.set_page_config(
-    page_title="Quantum Day Interactive Explorer",
+    page_title="⚛️ Quantum Day Interactive Explorer",
     page_icon="⚛️",
     layout="wide"
 )
 
-# Initialize session state variables if they don't exist
+# Initialize session state
 if 'potential_type' not in st.session_state:
     st.session_state.potential_type = "Harmonic Oscillator"
 
 # Sidebar configuration
 with st.sidebar:
-    st.title("⚛️ Quantum Explorer")
-    st.subheader("Happy Quantum Day! 🎉")
+    st.title("🌌 Quantum Explorer Portal")
+    st.success("Welcome, Quantum Adventurer! ✨")
 
     # Gemini API Key input
-    api_key = st.text_input("Enter your Gemini API Key", type="password")
+    api_key = st.text_input("🔐 Enter Gemini API Key", type="password")
 
-    # Only configure the API if a key is provided
     if api_key:
         try:
             genai.configure(api_key=api_key)
-            st.success("API key configured successfully!")
+            st.success("🔓 API Key Verified!")
         except Exception as e:
-            st.error(f"Error configuring API: {e}")
+            st.error(f"❌ API Error: {e}")
 
-    # Quantum simulation parameters
-    st.subheader("Simulation Parameters")
-    potential_type = st.selectbox(
-        "Potential Type",
-        ["Harmonic Oscillator", "Infinite Square Well", "Quantum Tunneling"]
-    )
+    st.subheader("🧪 Simulation Setup")
+    st.session_state.potential_type = st.selectbox("🎯 Choose Potential", ["Harmonic Oscillator", "Infinite Square Well", "Quantum Tunneling"])
+    st.session_state.n_state = st.slider("🎚️ Quantum State (n)", 1, 5, 1)
+    st.session_state.animation_speed = st.slider("⚡ Animation Speed", 0.1, 2.0, 1.0)
 
-    n_state = st.slider("Quantum State (n)", 1, 5, 1)
-    animation_speed = st.slider("Animation Speed", 0.1, 2.0, 1.0)
-
-    if st.button("Run Simulation"):
-        st.session_state.potential_type = potential_type
-        st.session_state.n_state = n_state
-        st.session_state.animation_speed = animation_speed
-
-# Main content
-st.title("Quantum Mechanics Interactive Explorer")
+# Main Interface
+st.title("⚛️ Quantum Mechanics Interactive Explorer")
 st.markdown("""
-Explore fundamental quantum mechanical concepts through interactive simulations and AI-powered explanations.
+🚀 Dive into the mysteries of the quantum realm. Customize your simulation, explore key principles, and ask Gemini anything about the world of quantum physics!
 """)
 
-# Initialize tabs
-tab1, tab2, tab3 = st.tabs(["Wavefunction Simulator", "Quantum Concepts", "Ask Gemini"])
+# Tabs
+tab1, tab2, tab3 = st.tabs(["🔬 Simulator", "📚 Concepts", "🤖 Ask Gemini"])
 
 with tab1:
-    st.header("Wavefunction Simulator")
-    st.markdown(f"Simulating quantum state: **{st.session_state.potential_type}** with n = {st.session_state.get('n_state', 1)}")
-    st.info("Visualization and animation features have been removed for this version.")
+    st.header("🌀 Wavefunction Simulator")
+    st.info("Visualization turned off for performance. Use this portal to mentally simulate quantum systems ✨")
 
-    if st.session_state.potential_type == "Harmonic Oscillator":
-        st.markdown("""
-        ### Harmonic Oscillator
-        The quantum harmonic oscillator is a quantum-mechanical analog of the classical harmonic oscillator.
-        
-        **Key properties:**
-        - Energy levels: E_n = ℓω(n + 1/2)
-        - Equally spaced energy levels
-        - Zero-point energy: E_0 = ℓω/2
-        - Wavefunction involves Hermite polynomials
-        """)
-
-    elif st.session_state.potential_type == "Infinite Square Well":
-        st.markdown("""
-        ### Infinite Square Well
-        Also known as the particle in a box, this is one of the simplest quantum systems.
-        
-        **Key properties:**
-        - Energy levels: E_n = (n²π²ℓ²)/(2mL²)
-        - Wavefunctions are sinusoidal inside the well and zero outside
-        - No tunneling occurs due to infinite potential barriers
-        """)
-
-    elif st.session_state.potential_type == "Quantum Tunneling":
-        st.markdown("""
-        ### Quantum Tunneling
-        A quantum mechanical phenomenon where particles can penetrate a potential barrier that would be impossible to overcome according to classical mechanics.
-        
-        **Key properties:**
-        - Transmission coefficient depends on barrier height and width
-        - Critical for many physical processes: alpha decay, nuclear fusion, etc.
-        - Basis for technologies like tunneling diodes and STM microscopy
-        """)
-
-with tab2:
-    st.header("Key Quantum Concepts")
-
-    concept = st.selectbox(
-        "Select a quantum concept to explore:",
-        ["Wave-Particle Duality", "Uncertainty Principle", "Quantum Superposition", 
-         "Quantum Entanglement", "Quantum Measurement"]
-    )
-
-    explanations = {
-        "Wave-Particle Duality": "Wave-particle duality refers to the concept that every particle or quantum entity exhibits both wave and particle properties.",
-        "Uncertainty Principle": "The Heisenberg uncertainty principle states that there is a fundamental limit to the precision with which complementary variables can be known simultaneously.",
-        "Quantum Superposition": "Quantum superposition is the principle that quantum systems can exist in multiple states simultaneously until measured.",
-        "Quantum Entanglement": "Quantum entanglement occurs when particles are correlated in such a way that the quantum state of one cannot be described independently of the other.",
-        "Quantum Measurement": "Quantum measurement refers to the process by which quantum systems are observed, causing their wavefunctions to collapse into definite states."
+    tips = {
+        "Harmonic Oscillator": "Think of a springy quantum trampoline — particles dance in smooth energy steps!",
+        "Infinite Square Well": "Like a bouncy ball trapped in a perfect quantum box. No escape, pure math.",
+        "Quantum Tunneling": "Defy classical logic — walk through walls! Quantum particles do it all the time."
     }
 
-    st.markdown(f"### {concept}\n{explanations[concept]}")
-    st.info("Visual explanations have been removed for this version.")
+    st.markdown(f"### ⚙️ Selected System: {st.session_state.potential_type}")
+    st.markdown(f"**Quantum State (n):** {st.session_state.n_state}")
+    st.markdown(f"💡 *Quantum Insight:* {tips.get(st.session_state.potential_type, '')}*")
+
+with tab2:
+    st.header("📖 Explore Quantum Concepts")
+    concept = st.selectbox("🔎 Choose a concept to explore:", [
+        "Wave-Particle Duality", "Uncertainty Principle", "Quantum Superposition",
+        "Quantum Entanglement", "Quantum Measurement"
+    ])
+
+    concept_explanations = {
+        "Wave-Particle Duality": "🎭 Everything in the quantum world plays dual roles — wave AND particle! From light to electrons, they do it all.",
+        "Uncertainty Principle": "🤯 You can't know it all. The more you know about a particle's position, the less you know about its momentum.",
+        "Quantum Superposition": "🌀 Schrödinger's cat lives in multiverses. A quantum state can be 0 and 1 until you peek!",
+        "Quantum Entanglement": "🧠 Telepathy for particles? Entangled particles share state instantly, across space!",
+        "Quantum Measurement": "🎯 Collapse! When we observe a quantum system, it picks a state — randomly but precisely."
+    }
+
+    st.subheader(f"🧠 {concept}")
+    st.markdown(concept_explanations[concept])
+
+    quantum_quotes = [
+        "\"God does not play dice with the universe.\" – Einstein",
+        "\"Anyone who is not shocked by quantum theory has not understood it.\" – Niels Bohr",
+        "\"If you think you understand quantum mechanics, you don't understand quantum mechanics.\" – Richard Feynman"
+    ]
+    st.caption(random.choice(quantum_quotes))
 
 with tab3:
-    st.header("Ask Gemini About Quantum Physics")
+    st.header("🤖 Ask Gemini Anything About Quantum Physics")
 
     if not api_key:
-        st.warning("Please enter your Gemini API key in the sidebar to use this feature.")
+        st.warning("🔐 Please enter your Gemini API key in the sidebar.")
     else:
-        query = st.text_input("Ask a question about quantum mechanics:", "What is the significance of Schrödinger's Cat thought experiment?")
+        question = st.text_input("❓ What do you want to know?", "What is quantum decoherence?")
 
-        if st.button("Ask Gemini"):
+        if st.button("💬 Ask Gemini"):
             try:
-                with st.spinner("Gemini is thinking..."):
+                with st.spinner("🧠 Gemini is thinking..."):
                     model = genai.GenerativeModel('gemini-pro')
                     response = model.generate_content(
-                        f"Explain the following quantum mechanics concept in detail, with clear explanations suitable for someone with basic physics knowledge: {query}"
+                        f"Explain this quantum physics concept for curious minds: {question}"
                     )
-
-                    st.markdown("### Gemini's Response:")
+                    st.markdown("### 📘 Gemini's Answer")
                     st.markdown(response.text)
-                    st.markdown("---")
-                    st.caption("Generated by Google Gemini API")
+                    st.caption("Powered by Google Gemini API")
             except Exception as e:
-                st.error(f"Error communicating with Gemini API: {e}")
-                st.info("Make sure your API key is correct and that you have access to the Gemini API.")
+                st.error(f"Gemini API error: {e}")
 
 # Footer
 st.markdown("---")
-st.markdown("Created for Quantum Day 2025 | ⚛️ Happy exploring the quantum realm!")
+st.markdown("✨ Created for Quantum Day 2025 | Explore, Learn, Question ✨")
