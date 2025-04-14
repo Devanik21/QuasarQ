@@ -1,4 +1,5 @@
 streamlit
-qiskit
-matplotlib
 numpy
+matplotlib
+google-generativeai
+scipy
