@@ -4,7 +4,7 @@ import random
 
 # Page configuration
 st.set_page_config(
-    page_title="⚛️ Quantum Day Interactive Explorer",
+    page_title=" Quantum Day Interactive Explorer",
     page_icon="⚛️",
     layout="wide"
 )
