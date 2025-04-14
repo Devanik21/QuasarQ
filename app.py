@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 import google.generativeai as genai
 from scipy.integrate import solve_ivp
+import math
 
 # Page configuration
 st.set_page_config(
