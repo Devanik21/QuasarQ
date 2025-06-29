@@ -1,253 +1,107 @@
 import streamlit as st
-import PyPDF2
-from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.metrics.pairwise import cosine_similarity
-import numpy as np
-import re
-from io import BytesIO
+import google.generativeai as genai
+import random
 
-# Set page config
+# Page configuration
 st.set_page_config(
-    page_title="PDF Q&A App",
-    page_icon="📄",
+    page_title=" Quantum Day Interactive Explorer",
+    page_icon="⚛️",
     layout="wide"
 )
 
-class SimplePDFQA:
-    def __init__(self):
-        self.text_chunks = []
-        self.vectorizer = None
-        self.tfidf_matrix = None
-        
-    def extract_text_from_pdf(self, pdf_file):
-        """Extract text from uploaded PDF file"""
-        try:
-            pdf_reader = PyPDF2.PdfReader(pdf_file)
-            text = ""
-            for page in pdf_reader.pages:
-                text += page.extract_text() + "\n"
-            return text
-        except Exception as e:
-            st.error(f"Error reading PDF: {str(e)}")
-            return None
-    
-    def chunk_text(self, text, chunk_size=300):
-        """Split text into chunks for better processing"""
-        # Clean text more thoroughly
-        text = re.sub(r'\s+', ' ', text)
-        text = re.sub(r'[^\w\s\.\,\?\!\:\;\-\(\)]', ' ', text)
-        text = text.strip()
-        
-        if len(text) < 50:
-            return [text] if text else []
-        
-        # Split into paragraphs first, then sentences
-        paragraphs = text.split('\n')
-        chunks = []
-        
-        for paragraph in paragraphs:
-            if len(paragraph.strip()) < 20:
-                continue
-                
-            if len(paragraph) <= chunk_size:
-                chunks.append(paragraph.strip())
-            else:
-                # Split long paragraphs into sentences
-                sentences = re.split(r'[.!?]+', paragraph)
-                current_chunk = ""
-                
-                for sentence in sentences:
-                    sentence = sentence.strip()
-                    if not sentence:
-                        continue
-                        
-                    if len(current_chunk + sentence) < chunk_size:
-                        current_chunk += sentence + ". "
-                    else:
-                        if current_chunk:
-                            chunks.append(current_chunk.strip())
-                        current_chunk = sentence + ". "
-                
-                if current_chunk:
-                    chunks.append(current_chunk.strip())
-        
-        # Filter out very short chunks
-        chunks = [chunk for chunk in chunks if len(chunk) > 30]
-        
-        return chunks if chunks else [text[:500]]  # Fallback
-    
-    def train_on_text(self, text):
-        """Create TF-IDF vectors from text chunks"""
-        self.text_chunks = self.chunk_text(text)
-        
-        if not self.text_chunks:
-            return False
-            
-        # Create TF-IDF vectorizer with better parameters
-        self.vectorizer = TfidfVectorizer(
-            max_features=2000,
-            stop_words='english',
-            ngram_range=(1, 3),
-            min_df=1,
-            max_df=0.95,
-            lowercase=True,
-            strip_accents='unicode'
-        )
-        
-        # Fit and transform text chunks
-        self.tfidf_matrix = self.vectorizer.fit_transform(self.text_chunks)
-        return True
-    
-    def answer_question(self, question, top_k=3):
-        """Find most relevant text chunks and create answer"""
-        if not self.vectorizer or not self.tfidf_matrix.shape[0]:
-            return "No document loaded. Please upload a PDF first."
-        
-        # Transform question using same vectorizer
-        question_vector = self.vectorizer.transform([question])
-        
-        # Calculate cosine similarity
-        similarities = cosine_similarity(question_vector, self.tfidf_matrix).flatten()
-        
-        # Get top k most similar chunks
-        top_indices = np.argsort(similarities)[-top_k:][::-1]
-        
-        # Lower threshold and provide more context
-        max_similarity = similarities[top_indices[0]]
-        
-        if max_similarity < 0.05:  # Lower threshold
-            # If no good matches, provide a general summary
-            return f"I couldn't find specific information matching your question. Here's what the document contains:\n\n{self.text_chunks[0][:300]}..."
-        
-        # Combine top chunks for answer
-        relevant_chunks = []
-        for i in top_indices:
-            if similarities[i] > 0.02:  # Even lower threshold
-                relevant_chunks.append((self.text_chunks[i], similarities[i]))
-        
-        if not relevant_chunks:
-            return f"Here's a sample from the document:\n\n{self.text_chunks[0][:400]}..."
-        
-        answer = f"Based on the document (confidence: {max_similarity:.3f}):\n\n"
-        for i, (chunk, score) in enumerate(relevant_chunks[:2], 1):
-            answer += f"**Section {i}** (relevance: {score:.3f}):\n{chunk}\n\n"
-        
-        return answer
+# Initialize session state
+if 'potential_type' not in st.session_state:
+    st.session_state.potential_type = "Harmonic Oscillator"
 
-# Initialize the QA system
-if 'qa_system' not in st.session_state:
-    st.session_state.qa_system = SimplePDFQA()
-    st.session_state.document_loaded = False
-
-# App header
-st.title("📄 Simple PDF Q&A App")
-st.markdown("Upload a PDF document and ask questions about its content!")
-
-# Sidebar for PDF upload
+# Sidebar configuration
 with st.sidebar:
-    st.header("📁 Upload Document")
-    uploaded_file = st.file_uploader(
-        "Choose a PDF file",
-        type="pdf",
-        help="Upload a PDF document to analyze"
-    )
-    
-    if uploaded_file is not None:
-        if st.button("Process PDF", type="primary"):
-            with st.spinner("Processing PDF..."):
-                # Extract text from PDF
-                text = st.session_state.qa_system.extract_text_from_pdf(uploaded_file)
-                
-                if text:
-                    # Train the system on the text
-                    success = st.session_state.qa_system.train_on_text(text)
-                    
-                    if success:
-                        st.session_state.document_loaded = True
-                        st.success("✅ PDF processed successfully!")
-                        st.info(f"Document contains {len(st.session_state.qa_system.text_chunks)} text chunks")
-                    else:
-                        st.error("Failed to process the PDF content")
-                else:
-                    st.error("Could not extract text from PDF")
+    st.title("🌌 Quantum Explorer Portal")
+    st.success("Welcome, Quantum Adventurer! ✨")
 
-# Main content area
-col1, col2 = st.columns([2, 1])
+    # Gemini API Key input
+    api_key = st.text_input("🔐 Enter Gemini API Key", type="password")
 
-with col1:
-    st.header("💬 Ask Questions")
-    
-    if st.session_state.document_loaded:
-        st.success("Document is ready! Ask any question about the content.")
-        
-        # Question input
-        question = st.text_area(
-            "Enter your question:",
-            placeholder="What is this document about?",
-            height=100
-        )
-        
-        if question:
-            with st.spinner("Finding answer..."):
-                answer = st.session_state.qa_system.answer_question(question)
-                
-                st.subheader("📝 Answer:")
-                st.write(answer)
-                
-                # Debug info
-                with st.expander("🔍 Debug Info"):
-                    st.write(f"Total chunks: {len(st.session_state.qa_system.text_chunks)}")
-                    st.write("Sample chunks:")
-                    for i, chunk in enumerate(st.session_state.qa_system.text_chunks[:3]):
-                        st.write(f"**Chunk {i+1}**: {chunk[:100]}...")
-        
-        # Quick question buttons
-        st.subheader("💡 Quick Questions")
-        col1, col2, col3 = st.columns(3)
-        
-        with col1:
-            if st.button("What is this about?"):
-                with st.spinner("Finding answer..."):
-                    answer = st.session_state.qa_system.answer_question("What is this document about? What is the main topic?")
-                    st.subheader("📝 Answer:")
-                    st.write(answer)
-        
-        with col2:
-            if st.button("Summarize"):
-                with st.spinner("Finding answer..."):
-                    answer = st.session_state.qa_system.answer_question("summarize main points key information")
-                    st.subheader("📝 Answer:")
-                    st.write(answer)
-        
-        with col3:
-            if st.button("Key details"):
-                with st.spinner("Finding answer..."):
-                    answer = st.session_state.qa_system.answer_question("important details key facts main information")
-                    st.subheader("📝 Answer:")
-                    st.write(answer)
+    if api_key:
+        try:
+            genai.configure(api_key=api_key)
+            st.success("🔓 API Key Verified!")
+        except Exception as e:
+            st.error(f"❌ API Error: {e}")
+
+    st.subheader("🧪 Simulation Setup")
+    st.session_state.potential_type = st.selectbox("🎯 Choose Potential", ["Harmonic Oscillator", "Infinite Square Well", "Quantum Tunneling"])
+    st.session_state.n_state = st.slider("🎚️ Quantum State (n)", 1, 5, 1)
+    st.session_state.animation_speed = st.slider("⚡ Animation Speed", 0.1, 2.0, 1.0)
+
+# Main Interface
+st.title("⚛️ Quantum Mechanics Interactive Explorer")
+st.markdown("""
+🚀 Dive into the mysteries of the quantum realm. Customize your simulation, explore key principles, and ask Gemini anything about the world of quantum physics!
+""")
+
+# Tabs
+tab1, tab2, tab3 = st.tabs(["🔬 Simulator", "📚 Concepts", "🤖 Ask Gemini"])
+
+with tab1:
+    st.header("🌀 Wavefunction Simulator")
+    st.info("Visualization turned off for performance. Use this portal to mentally simulate quantum systems ✨")
+
+    tips = {
+        "Harmonic Oscillator": "Think of a springy quantum trampoline — particles dance in smooth energy steps!",
+        "Infinite Square Well": "Like a bouncy ball trapped in a perfect quantum box. No escape, pure math.",
+        "Quantum Tunneling": "Defy classical logic — walk through walls! Quantum particles do it all the time."
+    }
+
+    st.markdown(f"### ⚙️ Selected System: {st.session_state.potential_type}")
+    st.markdown(f"**Quantum State (n):** {st.session_state.n_state}")
+    st.markdown(f"💡 *Quantum Insight:* {tips.get(st.session_state.potential_type, '')}*")
+
+with tab2:
+    st.header("📖 Explore Quantum Concepts")
+    concept = st.selectbox("🔎 Choose a concept to explore:", [
+        "Wave-Particle Duality", "Uncertainty Principle", "Quantum Superposition",
+        "Quantum Entanglement", "Quantum Measurement"
+    ])
+
+    concept_explanations = {
+        "Wave-Particle Duality": "🎭 Everything in the quantum world plays dual roles — wave AND particle! From light to electrons, they do it all.",
+        "Uncertainty Principle": "🤯 You can't know it all. The more you know about a particle's position, the less you know about its momentum.",
+        "Quantum Superposition": "🌀 Schrödinger's cat lives in multiverses. A quantum state can be 0 and 1 until you peek!",
+        "Quantum Entanglement": "🧠 Telepathy for particles? Entangled particles share state instantly, across space!",
+        "Quantum Measurement": "🎯 Collapse! When we observe a quantum system, it picks a state — randomly but precisely."
+    }
+
+    st.subheader(f"🧠 {concept}")
+    st.markdown(concept_explanations[concept])
+
+    quantum_quotes = [
+        "\"God does not play dice with the universe.\" – Einstein",
+        "\"Anyone who is not shocked by quantum theory has not understood it.\" – Niels Bohr",
+        "\"If you think you understand quantum mechanics, you don't understand quantum mechanics.\" – Richard Feynman"
+    ]
+    st.caption(random.choice(quantum_quotes))
+
+with tab3:
+    st.header("🤖 Ask Gemini Anything About Quantum Physics")
+
+    if not api_key:
+        st.warning("🔐 Please enter your Gemini API key in the sidebar.")
     else:
-        st.info("👈 Please upload and process a PDF document first using the sidebar.")
+        question = st.text_input("❓ What do you want to know?", "What is quantum decoherence?")
 
-with col2:
-    st.header("ℹ️ How it works")
-    st.markdown("""
-    1. **Upload PDF**: Choose your PDF file
-    2. **Process**: Click 'Process PDF' to extract and analyze text
-    3. **Ask Questions**: Type questions about the document
-    4. **Get Answers**: The app finds relevant sections and provides answers
-    
-    **Note**: This uses text similarity matching to find relevant content from your PDF.
-    """)
-    
-    if st.session_state.document_loaded:
-        st.header("📊 Document Stats")
-        st.metric("Text Chunks", len(st.session_state.qa_system.text_chunks))
-        
-        # Show sample of first chunk
-        if st.session_state.qa_system.text_chunks:
-            with st.expander("Preview first chunk"):
-                st.text(st.session_state.qa_system.text_chunks[0][:200] + "...")
+        if st.button("💬 Ask Gemini"):
+            try:
+                with st.spinner("🧠 Gemini is thinking..."):
+                    model = genai.GenerativeModel('gemini-pro')
+                    response = model.generate_content(
+                        f"Explain this quantum physics concept for curious minds: {question}"
+                    )
+                    st.markdown("### 📘 Gemini's Answer")
+                    st.markdown(response.text)
+                    st.caption("Powered by Google Gemini API")
+            except Exception as e:
+                st.error(f"Gemini API error: {e}")
 
 # Footer
 st.markdown("---")
-st.markdown("Built with Streamlit • Simple PDF Q&A System")
+st.markdown("✨ Created for Quantum Day 2025 | Explore, Learn, Question ✨")
