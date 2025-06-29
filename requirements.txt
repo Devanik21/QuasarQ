@@ -1,6 +1,7 @@
 torch 
 matplotlib
 streamlit
+google.generativeai
 PyPDF2
 langchain
 scikit-learn
