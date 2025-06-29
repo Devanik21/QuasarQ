@@ -1,6 +1,7 @@
-streamlit
-numpy
+torch 
 matplotlib
-google-generativeai
+streamlit
 PyPDF2
-scipy
+langchain
+scikit-learn
+numpy
